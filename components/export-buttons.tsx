@@ -8,7 +8,7 @@ async function captureCanvas(node: HTMLElement) {
   return html2canvas(node, { backgroundColor: '#f7f8f4', scale: 2, useCORS: true })
 }
 
-export function ExportButtons({ targetRef, fileName, label }: { targetRef: RefObject<HTMLElement>; fileName: string; label?: string }) {
+export function ExportButtons({ targetRef, fileName, label }: { targetRef: RefObject<HTMLElement | null>; fileName: string; label?: string }) {
   const [busy, setBusy] = useState<'pdf' | 'png' | null>(null)
 
   async function downloadPng() {
