@@ -5,8 +5,7 @@
 // source instead of an aggregator. Refreshed by /api/news on each request
 // (Next.js caches per `revalidate` below) and additionally warmed on a timer by
 // /api/cron/refresh so a cold cache is rare.
-import Parser from 'rss-parser'
-import { readCache, writeCache } from './file-cache'
+import { readCache, writeCache } from './cache-client'
 
 export type NewsItem = {
   id: string
@@ -33,8 +32,8 @@ const FEEDS: { url: string; category: NewsItem['category'] }[] = [
 const SAMPLE_NEWS: NewsItem[] = [
   { id: 'sample-1', title: 'झारखंड में ऑनलाइन दाखिल-खारिज प्रक्रिया को और सरल बनाने की तैयारी (नमूना)', link: 'https://jharbhoomi.jharkhand.gov.in/', source: 'नमूना स्रोत', category: 'भूमि रिकॉर्ड', publishedAt: new Date().toISOString() },
   { id: 'sample-2', title: 'रबी सीजन के लिए किसानों को बीज अनुदान योजना का लाभ लेने की अपील (नमूना)', link: 'https://jharsewa.jharkhand.gov.in/', source: 'नमूना स्रोत', category: 'किसान योजना', publishedAt: new Date().toISOString() },
-  { id: 'sample-3', title: 'रांची मंडी में धान और मक्का के भाव में हल्की तेजी (नमूना)', link: '#', source: 'नमूना स्रोत', category: 'मंडी भाव', publishedAt: new Date().toISOString() },
-  { id: 'sample-4', title: 'झारखंड राजस्व न्यायालयों में लंबित मामलों के निपटारे के लिए विशेष अभियान (नमूना)', link: '#', source: 'नमूना स्रोत', category: 'झारखंड', publishedAt: new Date().toISOString() },
+  { id: 'sample-3', title: 'रांची मंडी में धान और मक्का के भाव में हल्की तेजी (नमूना)', link: 'https://agmarknet.gov.in/', source: 'नमूना स्रोत', category: 'मंडी भाव', publishedAt: new Date().toISOString() },
+  { id: 'sample-4', title: 'झारखंड राजस्व न्यायालयों में लंबित मामलों के निपटारे के लिए विशेष अभियान (नमूना)', link: 'https://jharsewa.jharkhand.gov.in/', source: 'नमूना स्रोत', category: 'झारखंड', publishedAt: new Date().toISOString() },
 ]
 
 function cleanTitle(rawTitle: string, sourceHint?: string) {
@@ -54,26 +53,56 @@ function extractSource(rawTitle: string, feedSource?: string) {
   return 'Google News'
 }
 
-async function fetchFeed(parser: Parser, feed: { url: string; category: NewsItem['category'] }): Promise<NewsItem[]> {
-  const parsed = await parser.parseURL(feed.url)
-  return (parsed.items || []).slice(0, 8).map((item, index) => {
-    const rawTitle = item.title || ''
-    const feedSource = (item as unknown as { source?: string }).source || parsed.title
-    const source = extractSource(rawTitle, feedSource)
-    return {
-      id: item.guid || item.link || `${feed.category}-${index}`,
-      title: cleanTitle(rawTitle, source),
-      link: item.link || '#',
-      source,
-      category: feed.category,
-      publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
-    }
-  })
+// Public CORS proxy used as a second attempt: Google News RSS sends no
+// CORS headers, so a direct in-app fetch is rejected by the WebView. The
+// bundled sample data below remains the final fallback if both fail.
+const CORS_PROXY = 'https://api.allorigins.win/raw?url='
+
+async function fetchText(url: string, timeoutMs = 10000): Promise<string> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.text()
+}
+
+async function fetchFeedXml(feedUrl: string): Promise<string> {
+  try {
+    return await fetchText(feedUrl)
+  } catch {
+    return fetchText(`${CORS_PROXY}${encodeURIComponent(feedUrl)}`, 12000)
+  }
+}
+
+function textOf(parent: Element, tag: string): string {
+  const el = parent.getElementsByTagName(tag)[0]
+  return el?.textContent?.trim() ?? ''
+}
+
+function parseRss(xmlText: string, feed: { url: string; category: NewsItem['category'] }): NewsItem[] {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml')
+  if (doc.querySelector('parsererror')) throw new Error('RSS parse failed')
+  return Array.from(doc.getElementsByTagName('item'))
+    .slice(0, 8)
+    .map((item, index) => {
+      const rawTitle = textOf(item, 'title')
+      const sourceTag = textOf(item, 'source')
+      const source = extractSource(rawTitle, sourceTag || undefined)
+      return {
+        id: textOf(item, 'guid') || textOf(item, 'link') || `${feed.category}-${index}`,
+        title: cleanTitle(rawTitle, source),
+        link: textOf(item, 'link') || '#',
+        source,
+        category: feed.category,
+        publishedAt: textOf(item, 'pubDate') || new Date().toISOString(),
+      }
+    })
+}
+
+async function fetchFeed(feed: { url: string; category: NewsItem['category'] }): Promise<NewsItem[]> {
+  return parseRss(await fetchFeedXml(feed.url), feed)
 }
 
 export async function fetchLiveNews(): Promise<NewsItem[]> {
-  const parser = new Parser({ timeout: 8000 })
-  const settled = await Promise.allSettled(FEEDS.map((feed) => fetchFeed(parser, feed)))
+  const settled = await Promise.allSettled(FEEDS.map((feed) => fetchFeed(feed)))
   const items = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
   if (!items.length) throw new Error('सभी समाचार स्रोत उपलब्ध नहीं')
 

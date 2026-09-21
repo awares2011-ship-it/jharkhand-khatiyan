@@ -4,7 +4,7 @@
 // Government Data platform). Get a free key at https://data.gov.in/user/register
 // and set DATA_GOV_IN_API_KEY in .env.local — without one this falls back to
 // data.gov.in's shared public demo key, which is rate-limited and may throttle.
-import { readCache, writeCache } from './file-cache'
+import { readCache, writeCache } from './cache-client'
 
 export type MandiRate = {
   commodity: string
@@ -37,7 +37,10 @@ const SAMPLE_RATES: MandiRate[] = [
 ]
 
 function apiKey() {
-  return process.env.DATA_GOV_IN_API_KEY?.trim() || DEMO_KEY
+  // Client-safe: the APK has no server, so a per-deployment server key can't be
+  // kept secret — always use the shared public demo key here. (Rate limits may
+  // apply; the sample-data fallback below covers throttling gracefully.)
+  return DEMO_KEY
 }
 
 function buildUrl() {
@@ -74,7 +77,6 @@ function normalize(record: Record<string, unknown>): MandiRate | null {
 
 export async function fetchLiveMandiRates(): Promise<MandiRate[]> {
   const res = await fetch(buildUrl(), {
-    next: { revalidate: 1800 },
     signal: AbortSignal.timeout(8000),
   })
   if (!res.ok) throw new Error(`data.gov.in responded with ${res.status}`)

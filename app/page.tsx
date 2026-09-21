@@ -26,9 +26,10 @@ import {
   X,
 } from 'lucide-react'
 import { useLiveData } from '@/lib/use-live-data'
-import type { MandiResult } from '@/lib/mandi'
-import type { NewsResult } from '@/lib/news'
+import { getMandiRates, type MandiResult } from '@/lib/mandi'
+import { getNews, type NewsResult } from '@/lib/news'
 import { InAppWebView, type WebViewTarget } from '@/components/in-app-webview'
+import { tryOpenNativeBrowser } from '@/lib/portal'
 import { NotificationOptIn } from '@/components/notification-optin'
 import { ExportButtons } from '@/components/export-buttons'
 
@@ -106,8 +107,8 @@ export default function Page() {
   const [toast, setToast] = useState('')
   const [webview, setWebview] = useState<WebViewTarget>(null)
 
-  const mandi = useLiveData<MandiResult>('/api/mandi', 30 * 60 * 1000)
-  const news = useLiveData<NewsResult>('/api/news', 30 * 60 * 1000)
+  const mandi = useLiveData<MandiResult>(getMandiRates, 30 * 60 * 1000)
+  const news = useLiveData<NewsResult>(getNews, 30 * 60 * 1000)
 
   const mandiRef = useRef<HTMLDivElement>(null)
   const newsRef = useRef<HTMLDivElement>(null)
@@ -120,11 +121,15 @@ export default function Page() {
     window.setTimeout(() => setToast(''), 3000)
   }
 
-  function handlePortalClick(event: MouseEvent<HTMLAnchorElement>, title: string, url: string) {
+  async function handlePortalClick(event: MouseEvent<HTMLAnchorElement>, title: string, url: string) {
     if (url === '#' || !url.startsWith('http')) return
     if (event.metaKey || event.ctrlKey || event.shiftKey) return // let the user open a real new tab if they want
     event.preventDefault()
-    setWebview({ title, url })
+    // Android (Capacitor): open a Chrome Custom Tab so gov sites that block
+    // iframing still open smoothly, without leaving the app. Falls back to
+    // the in-app iframe view (web/PWA build, or if the native call fails).
+    const openedNatively = await tryOpenNativeBrowser(url)
+    if (!openedNatively) setWebview({ title, url })
   }
 
   return (

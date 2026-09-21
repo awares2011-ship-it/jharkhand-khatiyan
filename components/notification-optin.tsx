@@ -62,19 +62,17 @@ export function NotificationOptIn() {
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if ('serviceWorker' in navigator && 'PushManager' in window && vapidKey) {
-        const registration = await navigator.serviceWorker.ready
-        let subscription = await registration.pushManager.getSubscription()
-        if (!subscription) {
+        // NOTE (APK build): there is no server, so push subscriptions can't be
+        // registered anywhere. We still subscribe locally when a worker is
+        // available, but skip the /api/push/subscribe sync (no API routes).
+        const registration = await navigator.serviceWorker.getRegistration()
+        let subscription = await registration?.pushManager.getSubscription()
+        if (!subscription && registration) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(vapidKey),
           })
         }
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(subscription),
-        })
         setStatus('सूचनाएं चालू — हर 3 घंटे में रंगीन अपडेट मिलेंगे।')
       } else {
         setStatus('बैकग्राउंड पुश उपलब्ध नहीं — ऐप खुला रहने पर हर 3 घंटे में सूचना मिलेगी।')
@@ -88,14 +86,10 @@ export function NotificationOptIn() {
     setBusy(true)
     try {
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready
-        const subscription = await registration.pushManager.getSubscription()
+        // getRegistration (not .ready) so we never hang in WebViews without one.
+        const registration = await navigator.serviceWorker.getRegistration()
+        const subscription = await registration?.pushManager.getSubscription()
         if (subscription) {
-          await fetch('/api/push/unsubscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: subscription.endpoint }),
-          })
           await subscription.unsubscribe()
         }
       }

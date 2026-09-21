@@ -5,11 +5,22 @@ import { ArrowUpRight, Lock, RotateCw, X } from 'lucide-react'
 
 export type WebViewTarget = { title: string; url: string } | null
 
+type Status = 'loading' | 'loaded' | 'blocked'
+
+// Web/PWA fallback view. On Android the app never gets here at all — see
+// lib/portal.ts, which opens a Chrome Custom Tab instead and returns before
+// this component's target is ever set. This component only renders when
+// that native path isn't available.
 export function InAppWebView({ target, onClose }: { target: WebViewTarget; onClose: () => void }) {
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'blocked'>('loading')
+  const [status, setStatus] = useState<Status>('loading')
   const [reloadKey, setReloadKey] = useState(0)
   const timeoutRef = useRef<number | null>(null)
 
+  // We have no server to pre-check X-Frame-Options/CSP headers here (this is
+  // a static export with no API routes), so we just attempt the iframe and
+  // cap how long we wait for `onLoad` before treating it as blocked. A
+  // load event that never fires (the common case when a site refuses to
+  // frame) is the only signal available client-side.
   useEffect(() => {
     if (!target) return
     setStatus('loading')
@@ -67,22 +78,24 @@ export function InAppWebView({ target, onClose }: { target: WebViewTarget; onClo
           {status === 'blocked' && (
             <div className="webview-blocked">
               <p>
-                <b>{target.title}</b> को इन-ऐप व्यू में लोड करने में समय लग रहा है। कुछ सरकारी पोर्टल सुरक्षा कारणों से सीधे एम्बेड होने की अनुमति नहीं देते — कृपया ब्राउज़र में खोलें।
+                <b>{target.title}</b> इन-ऐप व्यू में एम्बेड होने की अनुमति नहीं देता। कुछ सरकारी पोर्टल सुरक्षा कारणों से यह ब्लॉक करते हैं — कृपया ब्राउज़र में खोलें।
               </p>
               <a className="webview-open-external" href={target.url} target="_blank" rel="noreferrer">
                 ब्राउज़र में खोलें <ArrowUpRight aria-hidden="true" />
               </a>
             </div>
           )}
-          <iframe
-            key={reloadKey}
-            className="webview-frame"
-            src={target.url}
-            title={target.title}
-            onLoad={() => setStatus('loaded')}
-            style={{ opacity: status === 'loaded' ? 1 : 0 }}
-            referrerPolicy="no-referrer"
-          />
+          {status !== 'blocked' && (
+            <iframe
+              key={reloadKey}
+              className="webview-frame"
+              src={target.url}
+              title={target.title}
+              onLoad={() => setStatus('loaded')}
+              style={{ opacity: status === 'loaded' ? 1 : 0 }}
+              referrerPolicy="no-referrer"
+            />
+          )}
         </div>
       </div>
     </div>
