@@ -121,24 +121,6 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 .news-read-link svg { width: 13px; }
 .news-empty, .news-error { grid-column: 1 / -1; padding: 22px; text-align: center; border-radius: 14px; border: 1px dashed var(--line); color: var(--muted); font-size: 12px; }
 
-/* ============ In-app WebView ============ */
-.webview-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(15, 28, 20, .55); backdrop-filter: blur(2px); animation: fade-in .2s ease; }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-.webview-panel { display: flex; flex-direction: column; width: min(760px, 100%); height: min(88vh, 900px); background: var(--card); border-radius: 20px 20px 0 0; overflow: hidden; box-shadow: 0 -20px 60px rgba(0,0,0,.35); }
-@media (min-width: 821px) { .webview-overlay { align-items: center; } .webview-panel { height: min(82vh, 820px); border-radius: 18px; } }
-.webview-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: #fafcf9; }
-.webview-topbar-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--green-dark); flex: 0 0 auto; }
-.webview-topbar-btn svg { width: 15px; }
-.webview-url { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 9px; background: #fff; border: 1px solid var(--line); font-size: 11px; color: var(--muted); overflow: hidden; }
-.webview-url svg { flex: 0 0 auto; width: 12px; color: #58906a; }
-.webview-url span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.webview-body { position: relative; flex: 1; background: #fff; }
-.webview-frame { width: 100%; height: 100%; border: 0; }
-.webview-loading, .webview-blocked { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px; text-align: center; background: #fff; }
-.webview-spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--green-soft); border-top-color: var(--green); animation: spin .8s linear infinite; }
-.webview-blocked p { max-width: 380px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.webview-open-external { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; background: var(--green); color: #fff; font-size: 12px; font-weight: 700; }
-
 /* ============ Notifications opt-in ============ */
 .notify-card { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-radius: 16px; background: linear-gradient(135deg, #fff, #f4f8f3); border: 1px solid var(--line); }
 .notify-icon-wrap { position: relative; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 13px; flex: 0 0 auto; color: #fff; background: linear-gradient(135deg, var(--saffron), var(--green)); }
@@ -164,4 +146,4 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 .export-capture { background: var(--background); padding: 4px; border-radius: 10px; }
 
 @media (max-width: 820px) { .news-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .news-grid { grid-template-columns: 1fr; } .notify-card { flex-wrap: wrap; } .notify-toggle { width: 100%; } .webview-panel { height: 92vh; } }
+@media (max-width: 520px) { .news-grid { grid-template-columns: 1fr; } .notify-card { flex-wrap: wrap; } .notify-toggle { width: 100%; } }

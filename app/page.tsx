@@ -28,7 +28,6 @@ import {
 import { useLiveData } from '@/lib/use-live-data'
 import { getMandiRates, type MandiResult } from '@/lib/mandi'
 import { getNews, type NewsResult } from '@/lib/news'
-import { InAppWebView, type WebViewTarget } from '@/components/in-app-webview'
 import { tryOpenNativeBrowser } from '@/lib/portal'
 import { NotificationOptIn } from '@/components/notification-optin'
 import { ExportButtons } from '@/components/export-buttons'
@@ -105,7 +104,6 @@ export default function Page() {
   const [query, setQuery] = useState('')
   const [language, setLanguage] = useState('हिंदी')
   const [toast, setToast] = useState('')
-  const [webview, setWebview] = useState<WebViewTarget>(null)
 
   const mandi = useLiveData<MandiResult>(getMandiRates, 30 * 60 * 1000)
   const news = useLiveData<NewsResult>(getNews, 30 * 60 * 1000)
@@ -125,11 +123,12 @@ export default function Page() {
     if (url === '#' || !url.startsWith('http')) return
     if (event.metaKey || event.ctrlKey || event.shiftKey) return // let the user open a real new tab if they want
     event.preventDefault()
-    // Android (Capacitor): open a Chrome Custom Tab so gov sites that block
-    // iframing still open smoothly, without leaving the app. Falls back to
-    // the in-app iframe view (web/PWA build, or if the native call fails).
+    // Portals open directly — most .gov.in sites block iframing outright, so an
+    // in-app "webview" modal just adds a loading spinner before failing. On
+    // Android this is a Chrome Custom Tab (stays inside the app); everywhere
+    // else it's a normal new tab straight to the real, working page.
     const openedNatively = await tryOpenNativeBrowser(url)
-    if (!openedNatively) setWebview({ title, url })
+    if (!openedNatively) window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -271,7 +270,6 @@ export default function Page() {
         <a href="#services"><Menu /><span>और</span></a>
       </nav>
 
-      <InAppWebView target={webview} onClose={() => setWebview(null)} />
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   )

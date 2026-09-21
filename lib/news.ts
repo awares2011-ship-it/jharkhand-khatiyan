@@ -1,10 +1,10 @@
-// Live news for the app's News section.
-// Source: Google News RSS search/topic feeds — no API key required, which keeps
-// this working out of the box. Swap FEEDS for a licensed news API (NewsAPI,
-// NewsData.io, a specific publisher's RSS) if you need a single authoritative
-// source instead of an aggregator. Refreshed by /api/news on each request
-// (Next.js caches per `revalidate` below) and additionally warmed on a timer by
-// /api/cron/refresh so a cold cache is rare.
+// Live news for the app's News section — fetched client-side (this is a
+// static export with no server, see next.config.mjs) and cached in
+// localStorage via lib/cache-client.ts so a repeat visit isn't a cold start.
+// Source: Google News RSS search/topic feeds — no API key required. Swap
+// FEEDS for a licensed news API (NewsAPI, NewsData.io, a specific
+// publisher's RSS) if you need a single authoritative source instead of an
+// aggregator.
 import { readCache, writeCache } from './cache-client'
 
 export type NewsItem = {

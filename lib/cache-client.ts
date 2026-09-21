@@ -1,7 +1,7 @@
-// Client-safe replacement for lib/file-cache.ts (which uses node:fs and only
-// works on a server). Persists the same { data, updatedAt } envelope in
-// localStorage so the APK build — which has no server or API routes — keeps
-// the live → cache → sample fallback chain working fully offline-capable.
+// Persists a { data, updatedAt } envelope in localStorage so the live →
+// cache → sample fallback chain (lib/mandi.ts, lib/news.ts) still has
+// something to show on a repeat visit with no network — this is a static
+// export with no server, so there's no file-backed cache to fall back to.
 export type CacheEnvelope<T> = { data: T; updatedAt: string }
 
 const PREFIX = 'jbi-cache:v1:'

@@ -1,7 +1,7 @@
-// Shared (client + server safe) definitions for the "smart multi-color"
-// notification system: a rotating set of themes/colors and message pool used
-// both by the /api/cron/notify sender and the client-side opt-in UI, so the
-// preview dots the user sees always match what actually gets sent.
+// Definitions for the "smart multi-color" local notification system: a
+// rotating set of themes/colors and message pool, consumed by
+// components/notification-optin.tsx. Local-only (see that file) — there is
+// no server here to send these as real push notifications.
 
 export type NotificationTheme = {
   id: 'saffron' | 'green' | 'blue' | 'rose'
@@ -56,11 +56,3 @@ export function pickNotificationPayload(slotIndex: number = currentSlotIndex()) 
   return { theme, message }
 }
 
-export function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i)
-  return outputArray
-}

@@ -2,13 +2,20 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Bell, BellRing } from 'lucide-react'
-import { NOTIFICATION_THEMES, currentSlotIndex, pickNotificationPayload, urlBase64ToUint8Array } from '@/lib/notifications'
+import { NOTIFICATION_THEMES, currentSlotIndex, pickNotificationPayload } from '@/lib/notifications'
 
 const INTERVAL_MS = 3 * 60 * 60 * 1000
 const LAST_LOCAL_KEY = 'jbi-last-local-notify-slot'
 
 type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported'
 
+// This is a static, server-less build (see next.config.mjs), so there is
+// nowhere to hold a Web Push subscription or send from — notifications are
+// local-only: a real Notification fires on a rotating 3-hour cadence while
+// the app is open (foreground). They will not arrive while the app/tab is
+// closed. True background delivery needs either a live deployed backend
+// (Web Push) or Capacitor's native Push Notifications plugin + Firebase
+// Cloud Messaging — neither is wired up here.
 export function NotificationOptIn() {
   const [permission, setPermission] = useState<PermissionState>('default')
   const [busy, setBusy] = useState(false)
@@ -22,10 +29,6 @@ export function NotificationOptIn() {
     setPermission(Notification.permission as PermissionState)
   }, [])
 
-  // Foreground fallback: fires a real local notification every 3 hours while this
-  // tab/PWA is open, cycling the same theme the server-side cron uses — so the
-  // "every 3 hr multi-color" behaviour is visible immediately, even before this
-  // app is deployed with a scheduler hitting /api/cron/notify in the background.
   useEffect(() => {
     if (permission !== 'granted') return
     const fireIfDue = () => {
@@ -55,48 +58,18 @@ export function NotificationOptIn() {
     try {
       const result = await Notification.requestPermission()
       setPermission(result as PermissionState)
-      if (result !== 'granted') {
-        setStatus('अनुमति नहीं मिली। ब्राउज़र सेटिंग में जाकर बदलें।')
-        return
-      }
-
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      if ('serviceWorker' in navigator && 'PushManager' in window && vapidKey) {
-        // NOTE (APK build): there is no server, so push subscriptions can't be
-        // registered anywhere. We still subscribe locally when a worker is
-        // available, but skip the /api/push/subscribe sync (no API routes).
-        const registration = await navigator.serviceWorker.getRegistration()
-        let subscription = await registration?.pushManager.getSubscription()
-        if (!subscription && registration) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
-          })
-        }
-        setStatus('सूचनाएं चालू — हर 3 घंटे में रंगीन अपडेट मिलेंगे।')
-      } else {
-        setStatus('बैकग्राउंड पुश उपलब्ध नहीं — ऐप खुला रहने पर हर 3 घंटे में सूचना मिलेगी।')
-      }
+      setStatus(
+        result === 'granted'
+          ? 'सूचनाएं चालू — ऐप खुला रहने पर हर 3 घंटे में रंगीन अपडेट मिलेंगे।'
+          : 'अनुमति नहीं मिली। ब्राउज़र सेटिंग में जाकर बदलें।',
+      )
     } finally {
       setBusy(false)
     }
   }, [])
 
-  const disable = useCallback(async () => {
-    setBusy(true)
-    try {
-      if ('serviceWorker' in navigator) {
-        // getRegistration (not .ready) so we never hang in WebViews without one.
-        const registration = await navigator.serviceWorker.getRegistration()
-        const subscription = await registration?.pushManager.getSubscription()
-        if (subscription) {
-          await subscription.unsubscribe()
-        }
-      }
-      setStatus('सूचनाएं बंद कर दी गईं।')
-    } finally {
-      setBusy(false)
-    }
+  const disable = useCallback(() => {
+    setStatus('सूचनाएं बंद कर दी गईं — ब्राउज़र सेटिंग में दोबारा अनुमति दें तो फिर चालू होंगी।')
   }, [])
 
   const isOn = permission === 'granted'
@@ -113,7 +86,7 @@ export function NotificationOptIn() {
             ))}
           </span>
         </b>
-        <p>हर 3 घंटे में मंडी भाव, योजना, भूमि रिकॉर्ड और समाचार की बारी-बारी रंगीन सूचनाएं।</p>
+        <p>हर 3 घंटे में मंडी भाव, योजना, भूमि रिकॉर्ड और समाचार की बारी-बारी रंगीन सूचनाएं (ऐप खुला रहने पर)।</p>
         {status && <p className="notify-status">{status}</p>}
       </div>
       {permission === 'unsupported' ? (
