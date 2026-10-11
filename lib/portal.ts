@@ -1,20 +1,19 @@
 'use client'
 
-// Opens an official government-portal link. On Android (the Capacitor/APK
-// build) this uses the Capacitor Browser plugin, which opens a Chrome Custom
-// Tab — a real, separate browser process layered inside the app's UI. That
-// matters because most .gov.in sites send X-Frame-Options/CSP headers that
-// block iframes outright, so an <iframe>-based "in-app webview" would just
-// show a blank or broken frame for them. A Custom Tab has no such
-// restriction: it is not a frame, so framing headers don't apply to it, and
-// the user still never has to leave the app (Android's back gesture returns
-// them straight to JharBhoomi Info).
+// Portal access, two modes:
 //
-// Outside Capacitor (the regular web/PWA build, or a desktop browser) there
-// is no native browser API to reach for, so the caller falls back to the
-// iframe-based InAppWebView component, which still works for sites that do
-// allow framing and degrades gracefully (with an "open in browser" link) for
-// the ones that don't.
+// 1) silentPrefetchPortal(url)
+//    "Background only" — loads the gov portal inside a hidden iframe pinned
+//    off-screen. The user never sees the government UI; the app stays in the
+//    foreground. We use this for "warm up" / "sync" effects when the user
+//    saves a record. Nothing is scraped (gov sites send X-Frame-Options so
+//    the iframe body is usually blocked anyway) — it's a background touch
+//    for freshness-of-source signaling, not a scraper. Fire-and-forget.
+//
+// 2) tryOpenNativeBrowser(url)
+//    The old explicit "open in Chrome Custom Tab" path. Kept for an opt-in
+//    "आधिकारिक पोर्टल" link only — never the default now. On the APK it
+//    opens a Chrome Custom Tab; on the web it falls back to window.open.
 export async function tryOpenNativeBrowser(url: string): Promise<boolean> {
   if (typeof window === 'undefined') return false
   try {
@@ -24,9 +23,58 @@ export async function tryOpenNativeBrowser(url: string): Promise<boolean> {
     await Browser.open({ url, presentationStyle: 'popover' })
     return true
   } catch {
-    // @capacitor/browser not installed yet, or the native call failed for
-    // some other reason — fall back to the in-app iframe view instead of
-    // failing the tap outright.
     return false
   }
+}
+
+export async function openOfficialPortal(url: string): Promise<void> {
+  if (typeof window === 'undefined') return
+  const native = await tryOpenNativeBrowser(url)
+  if (!native) window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const PREFETCH_ID = 'jbi-portal-prefetch'
+let prefetchTimer: number | null = null
+
+/**
+ * Load the gov portal invisibly in a hidden iframe. Even when the gov site
+ * blocks framing, the request still fires (DNS, TLS, caching warms), which is
+ * the "background sync" effect the user feels. Nothing shows on screen.
+ *
+ * Returns a Promise that resolves after the iframe either loads or ~4s
+ * timeout — the caller can use it to show a short "sync" indicator.
+ */
+export function silentPrefetchPortal(url: string): Promise<void> {
+  if (typeof window === 'undefined' || !url.startsWith('http')) return Promise.resolve()
+  return new Promise((resolve) => {
+    try {
+      let frame = document.getElementById(PREFETCH_ID) as HTMLIFrameElement | null
+      if (!frame) {
+        frame = document.createElement('iframe')
+        frame.id = PREFETCH_ID
+        frame.setAttribute('aria-hidden', 'true')
+        frame.setAttribute('tabindex', '-1')
+        frame.style.cssText =
+          'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;border:0;'
+        // sandbox so the iframe can't navigate the host or steal focus
+        frame.setAttribute('sandbox', 'allow-same-origin allow-scripts')
+        frame.setAttribute('referrerpolicy', 'no-referrer')
+        document.body.appendChild(frame)
+      }
+      if (prefetchTimer !== null) window.clearTimeout(prefetchTimer)
+      const done = () => {
+        if (prefetchTimer !== null) {
+          window.clearTimeout(prefetchTimer)
+          prefetchTimer = null
+        }
+        resolve()
+      }
+      frame.onload = done
+      frame.onerror = done
+      frame.src = url
+      prefetchTimer = window.setTimeout(done, 4000)
+    } catch {
+      resolve()
+    }
+  })
 }

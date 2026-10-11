@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">JharBhoomi Info</string>
-    <string name="title_activity_main">JharBhoomi Info</string>
+    <string name="app_name">Jharkhand Khatiyan</string>
+    <string name="title_activity_main">Jharkhand Khatiyan</string>
     <string name="package_name">com.jharbhoomi.info</string>
     <string name="custom_url_scheme">com.jharbhoomi.info</string>
 </resources>
