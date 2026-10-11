@@ -1,0 +1,19 @@
+{
+  "name": "Jharkhand Khatiyan — Land Info | झारखंड खातियान",
+  "short_name": "Jharkhand Khatiyan",
+  "description": "झारखंड खातियान, भूमि रिकॉर्ड, रजिस्टर-II, भू-नक्शा, मंडी भाव, समाचार, मौसम, योजनाएं और स्मार्ट रंगीन अलर्ट — सब कुछ एक ऐप में।",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1c5a3b",
+  "theme_color": "#2f8a5a",
+  "lang": "hi-IN",
+  "dir": "ltr",
+  "categories": ["government", "utilities", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

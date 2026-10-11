@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="JharBhoomi Info logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3a8261"/>
+      <stop offset="1" stop-color="#204d38"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="140" y1="120" x2="380" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fef3d9"/>
+      <stop offset="1" stop-color="#f6b93b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <g opacity="0.16" stroke="#ffffff" stroke-width="6">
+    <line x1="60" y1="360" x2="452" y2="360"/>
+    <line x1="90" y1="392" x2="422" y2="392"/>
+    <line x1="130" y1="424" x2="382" y2="424"/>
+    <line x1="256" y1="360" x2="256" y2="440"/>
+    <line x1="176" y1="360" x2="146" y2="424"/>
+    <line x1="336" y1="360" x2="366" y2="424"/>
+  </g>
+
+  <g transform="translate(256,236)">
+    <path d="M0 96 C0 96 -8 20 -66 -34 C-104 -70 -98 -128 -98 -128 C-98 -128 -34 -132 8 -84 C52 -34 46 40 46 40" fill="none" stroke="url(#leaf)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0 96 C0 96 10 8 70 -46 C112 -84 172 -78 172 -78 C172 -78 178 -14 130 34 C84 80 46 78 46 78" fill="none" stroke="url(#leaf)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="0" y1="96" x2="0" y2="150" stroke="url(#leaf)" stroke-width="26" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="10"/>
+</svg>
