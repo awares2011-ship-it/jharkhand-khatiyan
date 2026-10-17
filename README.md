@@ -70,6 +70,68 @@ keystore, and upload it to Play Console as usual. `capacitor.config.ts` sets
 the app id (`com.jharbhoomi.info`) and app name — change those there if
 needed before your first release build.
 
+## Release Builds (APK / AAB)
+
+### Prerequisites
+
+1. A release keystore file — create one if you don't have it:
+   ```bash
+   keytool -genkey -v -keystore android/jharbhoomi-release.keystore \
+     -alias jharbhoomi -keyalg RSA -keysize 2048 -validity 10000
+   ```
+
+2. Configure signing — edit `android/keystore.properties`:
+   ```properties
+   storeFile=jharbhoomi-release.keystore
+   storePassword=<your-store-password>
+   keyAlias=jharbhoomi
+   keyPassword=<your-key-password>
+   ```
+
+   > **Security note:** `keystore.properties` and `*.keystore` are `.gitignore`d.
+   > Never commit your real keystore or passwords to GitHub. When publishing a
+   > GitHub Actions build, store them as repository secrets instead.
+
+### Build from the command line
+
+```bash
+# 1. Build the static web export
+pnpm build
+
+# 2. Sync it into the Android project
+npx cap sync android
+
+# 3. Build a signed Release AAB (recommended for Play Store)
+cd android
+./gradlew bundleRelease
+
+#   -- OR -- build a signed Release APK (sideload / share)
+./gradlew assembleRelease
+```
+
+Output locations:
+
+- **AAB:** `android/app/build/outputs/bundle/release/app-release.aab`
+- **APK:** `android/app/build/outputs/apk/release/app-release.apk`
+
+Both are signed with the keystore configured in `keystore.properties`.
+You can verify the signature with:
+
+```bash
+apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk
+```
+
+### Play Store checklist before uploading
+
+- [ ] Bump `versionCode` and `versionName` in `android/app/build.gradle`.
+- [ ] Fill in the Play Console "Data safety" form — this app collects **no**
+      personal data; see [PRIVACY.md](PRIVACY.md).
+- [ ] Paste the hosted URL of [PRIVACY.md](PRIVACY.md) (e.g. a GitHub Pages
+      link) into the Play Console "Privacy policy" field.
+- [ ] Declare the AdMob ads permission if ads are enabled.
+- [ ] Add the app listing description, feature graphic (1024×500), and
+      512×512 icon from `public/`.
+
 ## Adding real background notifications
 
 The current setup only notifies while the app is open. To get true
