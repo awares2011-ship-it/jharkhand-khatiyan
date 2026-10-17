@@ -117,7 +117,11 @@ We may update this Privacy Policy from time to time. Any changes will be posted 
 
 If you have any questions, concerns, or suggestions regarding this Privacy Policy, please contact us:
 
+**Email:** supportbreakouttrade@gmail.com
+
 **GitHub Issues:** [https://github.com/awares2011-ship-it/jharkhand-khatiyan/issues](https://github.com/awares2011-ship-it/jharkhand-khatiyan/issues)
+
+**In-app privacy policy:** open "गोपनीयता नीति" in the app settings.
 
 ---
 
